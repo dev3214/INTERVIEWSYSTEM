@@ -60,6 +60,10 @@ export default function AdminsPage() {
   };
 
   const handleDemote = async (adminId: string) => {
+    if (!adminId) {
+      toast.error("Admin ID is required");
+      return;
+    }
     if (!window.confirm("Are you sure you want to demote this admin to interviewer?")) return;
     try {
       const res = await fetch("/api/admin/admins", {
@@ -70,7 +74,7 @@ export default function AdminsPage() {
       const data = await res.json();
       if (res.ok) {
         toast.success("Admin demoted to interviewer");
-        setAdmins(admins.filter((a) => a._id !== adminId));
+        setAdmins(admins.filter((a) => a.id !== adminId));
       } else {
         throw new Error(data.error || "Failed to demote admin");
       }
@@ -106,7 +110,7 @@ export default function AdminsPage() {
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredAdmins.map((admin, idx) => (
-          <Card key={admin._id || idx}>
+          <Card key={admin.id || idx}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{admin.username || admin.email}</CardTitle>
               <Badge>
@@ -116,10 +120,10 @@ export default function AdminsPage() {
             <CardContent>
               <div className="mb-2">Email: {admin.email}</div>
               <div className="mb-2">Role: {admin.role}</div>
-              {!isSuperAdminEmail(admin.email) && (
-              <Button variant="destructive" onClick={() => handleDemote(admin._id)}>
-                Demote to Interviewer
-              </Button>
+              {!isSuperAdminEmail(admin.email) && admin.id && (
+                <Button variant="destructive" onClick={() => handleDemote(admin.id)}>
+                  Demote to Interviewer
+                </Button>
               )}
             </CardContent>
           </Card>

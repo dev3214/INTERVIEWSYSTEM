@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     const { candidateId, assigneeId, assigneeType, notes, date, time, duration, type } = body
 
     if (!candidateId || !assigneeId || !assigneeType) {
+      console.log("[ASSIGNMENT EMAIL] Early return: missing required fields", { candidateId, assigneeId, assigneeType });
       return NextResponse.json({ 
         error: "Missing required fields: candidateId, assigneeId, and assigneeType are required" 
       }, { status: 400 })
@@ -62,21 +63,35 @@ export async function POST(req: NextRequest) {
     // Check if candidate exists
     const candidate = await Candidate.findById(candidateId).lean() as any
     if (!candidate) {
+      console.log("[ASSIGNMENT EMAIL] Early return: candidate not found", { candidateId });
       return NextResponse.json({ error: "Candidate not found" }, { status: 404 })
     }
 
     // Check if assignee exists and is active (if interviewer)
     let assignee = null;
     if (assigneeType === "interviewers") {
-      assignee = await Interviewer.findById(assigneeId).lean() as any;
+      let assigneeRaw = await Interviewer.findById(assigneeId).lean();
+      assignee = Array.isArray(assigneeRaw) ? assigneeRaw[0] : assigneeRaw;
       if (!assignee) {
+        console.log("[ASSIGNMENT EMAIL] Early return: interviewer not found", { assigneeId });
         return NextResponse.json({ error: "Interviewer not found" }, { status: 404 })
       }
       if (assignee.status !== "Active") {
+        console.log("[ASSIGNMENT EMAIL] Early return: interviewer not active", { assigneeId });
         return NextResponse.json({ error: "Interviewer is not active. Please activate the interviewer first." }, { status: 400 })
+      }
+    } else if (assigneeType === "admins" || assigneeType === "admin") {
+      let assigneeRaw = await Candidate.findById(assigneeId).lean();
+      assignee = Array.isArray(assigneeRaw) ? assigneeRaw[0] : assigneeRaw;
+      if (!assignee) {
+        console.log("[ASSIGNMENT EMAIL] Early return: admin not found", { assigneeId });
+        return NextResponse.json({ error: "Admin not found" }, { status: 404 })
       }
     }
     // (Optional: add admin check if you have a separate Admins model)
+
+    // Add debug log before assignee/candidate check
+    console.log("[ASSIGNMENT EMAIL] Debug: about to check assignee and candidate", { assignee, candidate });
 
     // Remove any previous assignment in assignedRounds for this candidate (optional, for single active assignment)
     await Candidate.findByIdAndUpdate(candidateId, {
@@ -160,6 +175,51 @@ export async function POST(req: NextRequest) {
         },
         { new: true }
       )
+    }
+
+    // After all DB updates succeed, send email to assigned person (interviewer or admin)
+    try {
+      if (assignee && candidate) {
+        const emailPayload = {
+          type: "assignment-notification",
+          to: assignee.email,
+          assigneeName: assignee.name || assignee.email,
+          assigneeRole: assigneeType === "interviewers" ? "Interviewer" : "Admin",
+          candidateName: candidate.username || candidate.email,
+          candidateEmail: candidate.email,
+          interviewDate: date,
+          interviewTime: time,
+          duration: duration,
+          interviewFormat: type,
+          timeZone: "IST",
+          assignedBy: session.user.name || session.user.email
+        };
+        await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(emailPayload)
+        });
+
+        // Send email to candidate as well
+        const candidateEmailPayload = {
+          type: "candidate-assignment",
+          to: candidate.email,
+          candidateName: candidate.username || candidate.email,
+          interviewerName: assignee.name || assignee.email,
+          interviewDate: date,
+          interviewTime: time,
+          duration: duration,
+          interviewFormat: type,
+          timeZone: "IST"
+        };
+        await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(candidateEmailPayload)
+        });
+      }
+    } catch (emailError) {
+      console.error("[ASSIGNMENT EMAIL] Failed to send assignment notification email:", emailError);
     }
 
     return NextResponse.json({
@@ -289,6 +349,21 @@ export async function PATCH(req: NextRequest) {
         { "assignedCandidates.candidateId": candidateId },
         { $pull: { assignedCandidates: { candidateId } } }
       );
+      // Send unassignment email to candidate
+      try {
+        const unassignmentEmailPayload = {
+          type: "candidate-unassignment",
+          to: candidate.email,
+          candidateName: candidate.username || candidate.email
+        };
+        await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(unassignmentEmailPayload)
+        });
+      } catch (emailError) {
+        console.error("[UNASSIGNMENT EMAIL] Failed to send candidate unassignment email:", emailError);
+      }
       return NextResponse.json({ message: `Unassigned ${role} from round ${roundNumber}.`, success: true }, { status: 200 });
     }
     // --- Reassignment logic ---
@@ -333,6 +408,10 @@ export async function PATCH(req: NextRequest) {
       if (role === "interviewers" && newAssigneeId) {
         // Fetch candidate details for assignment
         const candidateDoc = await Candidate.findById(candidateId).lean();
+        if (!candidateDoc) {
+          return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
+        }
+        const candidateObj: any = candidateDoc; // Explicitly type as any to avoid TS property errors
         console.log(`[REASSIGN] Adding candidate ${candidateId} to new interviewer ${newAssigneeId}`);
         await Interviewer.findByIdAndUpdate(
           newAssigneeId,
@@ -340,14 +419,14 @@ export async function PATCH(req: NextRequest) {
             $push: {
               assignedCandidates: {
                 candidateId,
-                candidateName: candidateDoc.username || candidateDoc.email,
-                candidateEmail: candidateDoc.email,
-                workDomain: candidateDoc.workDomain?.name || "Not specified",
+                candidateName: candidateObj.username || candidateObj.email,
+                candidateEmail: candidateObj.email,
+                workDomain: candidateObj.workDomain?.name || "Not specified",
                 assignedAt: new Date(),
                 assignedBy: session.user._id,
                 status: "assigned",
                 currentRound: 0,
-                totalRounds: candidateDoc.progress?.length || 0,
+                totalRounds: candidateObj.progress?.length || 0,
                 lastActivity: new Date(),
                 notes: "",
                 interviewRounds: []

@@ -188,11 +188,20 @@ export default function ScheduleInterviewPage() {
         }),
       });
       const data = await response.json();
+      if (!response.ok) {
+        if (data.error === "Interviewer is not active. Please activate the interviewer first.") {
+          toast.error("The selected interviewer is not active. Please activate them before assignment.");
+        } else {
+          toast.error(data.error || "Failed to update assignment");
+        }
+        setLoading(false);
+        return;
+      }
       if (response.ok && data.success) {
         toast.success(data.message || "Operation successful");
         router.push("/admin/candidates");
       } else {
-        throw new Error(data.error || "Failed to update assignment");
+        toast.error(data.error || "Failed to update assignment");
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update assignment");
