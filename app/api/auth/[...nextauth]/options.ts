@@ -17,31 +17,6 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    // async jwt({ token, account, profile }) {
-    //   await connect()
-
-    //   if (account?.provider === "google" && profile?.email) {
-    //     let user = await candidates.findOne({ email: profile.email })
-
-    //     if (!user) {
-    //       const role = profile.email === "miteshdobariya.co22d1@scet.ac.in" ? "admin" : "candidate"
-    //       user = await candidates.create({
-    //         email: profile.email,
-    //         username: profile.name?.replace(/\s+/g, "").toLowerCase(),
-    //         password: "",
-    //         role,
-    //       })
-    //     }
-
-    //     token._id = user._id.toString()
-    //     token.email = user.email
-    //     token.username = user.username
-    //     token.role = user.role
-    //   }
-
-    //   return token
-    // },
-
 
     async jwt({ token, account, profile }) {
   await connect();
