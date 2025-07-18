@@ -755,7 +755,7 @@ export default function CandidateProfilePage() {
                               Loading domains...
                             </div>
                           ) : domains.length > 0 ? (
-                            domains.map((domain) => (
+                            domains.filter(domain => domain.isActive).map((domain) => (
                               <SelectItem key={domain._id} value={domain._id}>
                                 {domain.domainname}
                               </SelectItem>

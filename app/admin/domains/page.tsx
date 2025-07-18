@@ -271,9 +271,29 @@ export default function DomainsPage() {
     }
   }
 
-  const toggleDomainStatus = (domainId: string) => {
-    setDomains(domains.map((d) => (d._id === domainId ? { ...d, isActive: !d.isActive } : d)))
-    toast("Domain status updated")
+  const toggleDomainStatus = async (domainId: string) => {
+    const domain = domains.find((d) => d._id === domainId);
+    if (!domain) return;
+    const newStatus = !domain.isActive;
+    try {
+      const res = await fetch("/api/domains", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ _id: domainId, isActive: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update domain status");
+      const data = await res.json();
+      setDomains((prev) => prev.map((d) => d._id === domainId ? data.domain : d));
+      toast("Domain status updated");
+    } catch (err: unknown) {
+      let message = "Failed to update domain status";
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === "string") {
+        message = err;
+      }
+      toast(message);
+    }
   }
 
   const handleViewRounds = async (domain: Domain) => {
