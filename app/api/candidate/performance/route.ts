@@ -10,6 +10,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 async function evaluateWithAI(question: string, code: string): Promise<string> {
   const prompt = `
 You are a senior technical interviewer responsible for evaluating code submissions from candidates.
+If the candidate's answer is empty, blank, or does not address the question at all, assign 0 marks for all criteria and explain that the answer is missing or irrelevant.
 
 Please analyze the candidate's code in response to the given question. Assess it across the following four criteria, each on a scale from 0 to 10:
 

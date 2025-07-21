@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "OpenAI API key is missing." }, { status: 500 })
   }
 
-  const prompt = `You are an expert technical interviewer and genrating question for post-graduate candidates . Generate ${numberOfQuestions} ${type} interview questions for the topic '${domainName}' with difficulty '${difficulty}'. give question for type ${type} only. If TYPE is "coding" then give question with code example like this: You are given a list of integers. Your task is to write a function that returns the maximum number in the list. For example: find_max([3, 7, 2, 9, 4]) → 9, so candidate can write code in any language. Return only the questions as a JSON array of objects with fields: question, type, difficulty, options (array, if MCQ), correctAnswer (if MCQ), points (suggested), metadata (object, if needed), isAIGenerated (true).`
+  const prompt = `You are an expert technical interviewer and genrating question for post-graduate candidates . Generate ${numberOfQuestions} ${type} interview questions for the topic '${domainName}' with difficulty '${difficulty}'. give question for type ${type} only. If TYPE is "coding" then give question with code example like this: You are given a list of integers. Your task is to write a function that returns the maximum number in the list. For example: find_max([3, 7, 2, 9, 4]) → 9 with 2 more exaple related to question , so candidate can write code in any language. Return only the questions as a JSON array of objects with fields: question, type, difficulty, options (array, if MCQ), correctAnswer (if MCQ), points (suggested), metadata (object, if needed), isAIGenerated (true).`
 
   
   try {
