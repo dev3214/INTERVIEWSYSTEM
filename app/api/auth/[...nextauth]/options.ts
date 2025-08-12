@@ -46,12 +46,9 @@ export const authOptions: NextAuthOptions = {
   await connect();
 
   if (account?.provider === "google" && profile?.email) {
-    console.log("🔍 [JWT] Google OAuth completed for email:", profile.email)
-    console.log("🔍 [JWT] Account state:", account.state)
     
     // Always fetch the latest user data from database to ensure we have college context
     let user = await candidates.findOne({ email: profile.email });
-    console.log("🔍 [JWT] User from DB:", user ? { _id: user._id, collegeId: user.collegeId, collegeSlug: user.collegeSlug } : "NOT FOUND")
 
     if (!user) {
       // Get admin emails from env and split into array
@@ -72,14 +69,11 @@ export const authOptions: NextAuthOptions = {
 
       // For candidates, check if this is a college login
       if (role === "candidate") {
-        console.log("🔍 [JWT] Processing candidate login")
         
         // Check if this is a college login by looking for college context in account state
         const isCollegeLogin = account.state && account.state !== "undefined";
-        console.log("🔍 [JWT] College login check:", isCollegeLogin, "State:", account.state);
         
         if (isCollegeLogin) {
-          console.log("🔍 [JWT] College login detected - deferring user creation to validation API")
           // Don't create user yet - let the validation API handle it
           // Just return the token with basic info
           token.email = profile.email;
@@ -87,7 +81,6 @@ export const authOptions: NextAuthOptions = {
           token.role = role;
           return token;
         } else {
-          console.log("🔍 [JWT] Regular candidate login - creating user")
           // Regular candidate login (no college context)
           const userData: any = {
             email: profile.email,
@@ -97,7 +90,6 @@ export const authOptions: NextAuthOptions = {
           };
           
           user = await candidates.create(userData);
-          console.log("✅ [JWT] Regular candidate user created")
         }
       } else {
         // Admin/HR/Interviewer login
@@ -137,13 +129,11 @@ export const authOptions: NextAuthOptions = {
       token.collegeId = user.collegeId.toString();
       token.collegeSlug = user.collegeSlug;
       token.emailDomain = user.emailDomain;
-      console.log("🔍 [JWT] Added college context to token:", user.collegeSlug);
     }
     
     // If we have a user but no _id in token, update it
     if (user && !token._id) {
       token._id = user._id.toString();
-      console.log("🔍 [JWT] Updated token with user ID:", user._id);
     }
     
     // For college candidates, ensure college context is always added if available in database
@@ -151,7 +141,6 @@ export const authOptions: NextAuthOptions = {
       token.collegeId = user.collegeId.toString();
       token.collegeSlug = user.collegeSlug;
       token.emailDomain = user.emailDomain;
-      console.log("🔍 [JWT] Force-added college context to token:", user.collegeSlug);
     }
     
     // Always ensure college context is present if user has it in database
@@ -159,7 +148,6 @@ export const authOptions: NextAuthOptions = {
       token.collegeId = user.collegeId.toString();
       token.collegeSlug = user.collegeSlug;
       token.emailDomain = user.emailDomain;
-      console.log("🔍 [JWT] Ensured college context in token:", user.collegeSlug);
     }
   }
 

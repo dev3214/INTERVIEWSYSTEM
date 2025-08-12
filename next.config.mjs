@@ -9,6 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  env: {
+    BASE_URL: process.env.BASE_URL || 'http://localhost:3000',
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,

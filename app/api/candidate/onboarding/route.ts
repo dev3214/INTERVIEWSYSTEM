@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       const updateData = {
         username: fullName,
         phonenumber: phone,
-        dateofBirth,
+        dateofBirth: dateOfBirth,
         address,
         city,
         state,
@@ -94,14 +94,14 @@ export async function POST(req: NextRequest) {
         { new: true }
       )
 
-      console.log("✅ [ONBOARDING] Updated existing candidate:", candidate.email)
+      
     } else {
       // Create new candidate
       const candidateData = {
         email: session.user.email,
         username: fullName,
         phonenumber: phone,
-        dateofBirth,
+        dateofBirth: dateOfBirth,
         address,
         city,
         state,
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       }
 
       candidate = await candidates.create(candidateData)
-      console.log("✅ [ONBOARDING] Created new candidate:", candidate.email)
+      
     }
 
     // Get the JWT token to update it with the user ID
@@ -171,7 +171,6 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error("❌ [ONBOARDING] Error:", error)
     return NextResponse.json({ 
       error: "Internal server error" 
     }, { status: 500 })

@@ -261,10 +261,8 @@ export default function CandidateProfilePage() {
       
       if (response.data && response.data.domains) {
         setDomains(response.data.domains)
-        console.log("🔍 [PROFILE] Loaded domains:", response.data.domains.length, "Has college context:", response.data.hasCollegeContext)
       }
     } catch (error) {
-      console.error("Failed to load domains:", error)
       toast.error("Failed to load work domains")
     } finally {
       setIsLoadingDomains(false)

@@ -22,11 +22,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Candidate not found" }, { status: 404 })
     }
 
-    console.log("🔍 [GET-COLLEGE-DOMAINS] Candidate found:", {
-      email: candidate.email,
-      collegeId: candidate.collegeId,
-      collegeSlug: candidate.collegeSlug
-    })
+    
 
     let domainsList
     if (candidate.collegeId) {
@@ -37,21 +33,20 @@ export async function GET(req: NextRequest) {
         domainsList = await domains.find({
           _id: { $in: college.domains }
         }).select('_id domainname description isActive')
-        console.log("🔍 [GET-COLLEGE-DOMAINS] Found college domains:", domainsList.length)
+        
       } else {
         // College has no domains assigned - get all domains
         domainsList = await domains.find({}).select('_id domainname description isActive')
-        console.log("🔍 [GET-COLLEGE-DOMAINS] College has no domains, showing all:", domainsList.length)
+        
       }
     } else {
       // Candidate has no college context - get all domains
       domainsList = await domains.find({}).select('_id domainname description isActive')
-      console.log("🔍 [GET-COLLEGE-DOMAINS] Found all domains:", domainsList.length)
+      
     }
 
     // Ensure we always return an array
     if (!domainsList || domainsList.length === 0) {
-      console.log("⚠️ [GET-COLLEGE-DOMAINS] No domains found, returning empty array")
       domainsList = []
     }
 
@@ -63,7 +58,6 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error("❌ [GET-COLLEGE-DOMAINS] Error:", error)
     return NextResponse.json({ 
       error: "Internal server error" 
     }, { status: 500 })

@@ -31,6 +31,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { Check, ChevronsUpDown } from "lucide-react"
+import { getLoginUrl } from "@/lib/config"
 
 type College = {
   id: string
@@ -345,12 +346,12 @@ export default function CollegesPage() {
                     @{college.emailDomain}
                   </code>
                 </TableCell>
-                                 <TableCell>
-                   <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                     localhost:3000/login/{college.slug}
-                   </code>
-                 </TableCell>
-                                 <TableCell>
+                <TableCell>
+                  <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                    {getLoginUrl(college.slug)}
+                  </code>
+                </TableCell>
+                <TableCell>
                    <div className="flex flex-wrap gap-1">
                      {college.domains.slice(0, 2).map((domain) => (
                        <Badge key={domain} variant="secondary" className="text-xs">
@@ -459,7 +460,7 @@ export default function CollegesPage() {
                 placeholder="college-slug"
               />
               <p className="text-xs text-muted-foreground">
-                This will create the URL: localhost:3000/login/{formData.slug || "college-slug"}
+                This will create the URL: {getLoginUrl(formData.slug || "college-slug")}
               </p>
             </div>
             <div className="grid gap-2">

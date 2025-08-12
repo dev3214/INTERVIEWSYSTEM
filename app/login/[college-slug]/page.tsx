@@ -70,9 +70,6 @@ export default function CollegeLoginPage({ params }: { params: Promise<{ "colleg
     if (!college) return
     
     try {
-      console.log("🔍 [LOGIN] Starting Google OAuth for college:", college.name)
-      console.log("🔍 [LOGIN] College slug:", college.slug)
-      console.log("🔍 [LOGIN] Expected email domain:", college.emailDomain)
       
       // Store college context in sessionStorage for validation
       sessionStorage.setItem('collegeContext', JSON.stringify({
@@ -89,19 +86,13 @@ export default function CollegeLoginPage({ params }: { params: Promise<{ "colleg
         state: college.slug // Pass college slug in state as backup
       })
       
-      console.log("🔍 [LOGIN] SignIn response:", res)
-      console.log("🔍 [LOGIN] Callback URL set to:", `/api/auth/validate-college-email?collegeSlug=${college.slug}`)
-      
       if (res?.error) {
-        console.log("❌ [LOGIN] Google login failed:", res.error)
         toast.error("Google login failed")
       } else if (res?.url) {
-        console.log("🔍 [LOGIN] Redirecting to OAuth URL:", res.url)
         // Redirect to the OAuth URL
         window.location.href = res.url
       }
     } catch (error) {
-      console.log("❌ [LOGIN] Login error:", error)
       toast.error("Login failed. Please try again.")
     }
   }

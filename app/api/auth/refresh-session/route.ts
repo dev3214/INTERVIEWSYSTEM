@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error("❌ [REFRESH] Error:", error)
     return NextResponse.json({ 
       error: "Internal server error" 
     }, { status: 500 })
@@ -63,15 +62,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/login", req.url))
     }
     
-    console.log("🔍 [REFRESH] User data from DB:", {
-      _id: user._id,
-      collegeId: user.collegeId,
-      collegeSlug: user.collegeSlug
-    })
+    
     
     // If we have college context in URL params, ensure it's in the database
     if (collegeId && collegeSlug && (!user.collegeId || !user.collegeSlug)) {
-      console.log("🔍 [REFRESH] Adding college context to user")
       await candidates.findByIdAndUpdate(user._id, {
         collegeId: collegeId,
         collegeSlug: collegeSlug
@@ -83,7 +77,6 @@ export async function GET(req: NextRequest) {
       const emailDomain = user.email.split('@')[1]
       const college = await College.findOne({ emailDomain })
       if (college) {
-        console.log("🔍 [REFRESH] Detected college for user, adding context:", college.name)
         await candidates.findByIdAndUpdate(user._id, {
           collegeId: college._id,
           collegeSlug: college.slug,
@@ -107,11 +100,9 @@ export async function GET(req: NextRequest) {
       maxAge: 60 // 1 minute
     })
     
-    console.log("✅ [REFRESH] Redirecting to:", redirectTo || "/candidate/profile")
     return response
     
   } catch (error: any) {
-    console.error("❌ [REFRESH] Error:", error)
     return NextResponse.redirect(new URL("/login", req.url))
   }
 }

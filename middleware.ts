@@ -20,20 +20,17 @@ export async function middleware(request: NextRequest) {
   if (token && isCandidatePage && token.role === "candidate") {
     // Check if user has a complete profile by checking if they have an _id
     if (!token._id) {
-      console.log("🔍 [MIDDLEWARE] New candidate without profile, redirecting to profile page")
       return NextResponse.redirect(new URL("/candidate/profile", request.url));
     }
     
             // For college candidates, ensure they have college context
         if (token.collegeId && (!token.collegeSlug)) {
-          console.log("🔍 [MIDDLEWARE] College candidate without college context, redirecting to login")
           return NextResponse.redirect(new URL("/login", request.url));
         }
         
         // For college candidates without college context, force a session refresh
         if (token.role === "candidate" && !token._id && token.email && token.email.includes('@')) {
           // This might be a college candidate - check if they have college context in database
-          console.log("🔍 [MIDDLEWARE] Potential college candidate without context, forcing refresh")
           return NextResponse.redirect(new URL(`/api/auth/refresh-session?redirect=${encodeURIComponent(request.nextUrl.pathname)}`, request.url));
         }
   }
