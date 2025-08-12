@@ -79,11 +79,19 @@ export default function CollegeLoginPage({ params }: { params: Promise<{ "colleg
         collegeName: college.name
       }))
       
-      // Start Google OAuth with direct redirect to validation endpoint
-      await signIn("google", { 
-        redirect: true,
-        callbackUrl: `${window.location.origin}/api/auth/validate-college-email?collegeSlug=${college.slug}`
+      // Start Google OAuth with custom callback
+      const res = await signIn("google", { 
+        redirect: false,
+        callbackUrl: `/api/auth/validate-college-email?collegeSlug=${college.slug}`,
+        state: college.slug // Pass college slug in state as backup
       })
+      
+      if (res?.error) {
+        toast.error("Google login failed")
+      } else if (res?.url) {
+        // Redirect to the OAuth URL
+        window.location.href = res.url
+      }
     } catch (error) {
       toast.error("Login failed. Please try again.")
     }

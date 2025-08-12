@@ -67,12 +67,30 @@ export const authOptions: NextAuthOptions = {
         role = "hr";
       }
 
-      // For candidates, NEVER auto-create here; validation route must create/update the user
+      // For candidates, check if this is a college login
       if (role === "candidate") {
-        token.email = profile.email;
-        token.username = profile.name?.replace(/\s+/g, "").toLowerCase();
-        token.role = role;
-        return token;
+        
+        // Check if this is a college login by looking for college context in account state
+        const isCollegeLogin = account.state && account.state !== "undefined";
+        
+        if (isCollegeLogin) {
+          // Don't create user yet - let the validation API handle it
+          // Just return the token with basic info
+          token.email = profile.email;
+          token.username = profile.name?.replace(/\s+/g, "").toLowerCase();
+          token.role = role;
+          return token;
+        } else {
+          // Regular candidate login (no college context)
+          const userData: any = {
+            email: profile.email,
+            username: profile.name?.replace(/\s+/g, "").toLowerCase(),
+            password: "",
+            role,
+          };
+          
+          user = await candidates.create(userData);
+        }
       } else {
         // Admin/HR/Interviewer login
         const userData: any = {

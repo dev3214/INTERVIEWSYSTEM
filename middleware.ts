@@ -18,13 +18,9 @@ export async function middleware(request: NextRequest) {
 
   // For candidate pages, check if user has college context
   if (token && isCandidatePage && token.role === "candidate") {
-    // If user does not yet have an _id, allow access to the profile page so they can finish onboarding
+    // Check if user has a complete profile by checking if they have an _id
     if (!token._id) {
-      if (request.nextUrl.pathname !== "/candidate/profile") {
-        return NextResponse.redirect(new URL("/candidate/profile", request.url));
-      }
-      // Already on profile page; let the request through to avoid redirect loop
-      return NextResponse.next();
+      return NextResponse.redirect(new URL("/candidate/profile", request.url));
     }
     
             // For college candidates, ensure they have college context
