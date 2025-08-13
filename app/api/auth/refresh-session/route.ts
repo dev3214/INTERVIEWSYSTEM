@@ -53,13 +53,15 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.email) {
-      return NextResponse.redirect(new URL("/login", req.url))
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+      return NextResponse.redirect(new URL("/login", baseUrl))
     }
     
     // Get the latest user data from database
     const user = await candidates.findOne({ email: session.user.email })
     if (!user) {
-      return NextResponse.redirect(new URL("/login", req.url))
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+      return NextResponse.redirect(new URL("/login", baseUrl))
     }
     
     
@@ -90,7 +92,8 @@ export async function GET(req: NextRequest) {
     }
     
     // Force NextAuth to refresh the session by setting a cookie
-    const response = NextResponse.redirect(new URL(redirectTo || "/candidate/profile", req.url))
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+    const response = NextResponse.redirect(new URL(redirectTo || "/candidate/profile", baseUrl))
     
     // Set a flag to force session refresh
     response.cookies.set('force-session-refresh', 'true', {
@@ -103,6 +106,7 @@ export async function GET(req: NextRequest) {
     return response
     
   } catch (error: any) {
-    return NextResponse.redirect(new URL("/login", req.url))
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+    return NextResponse.redirect(new URL("/login", baseUrl))
   }
 }

@@ -8,11 +8,15 @@ import College from "@/models/colleges"
 
 export async function GET(req: NextRequest) {
   try {
+    console.log("🔍 [DEBUG] validate-college-email called")
     const { searchParams } = new URL(req.url)
     const collegeSlug = searchParams.get("collegeSlug")
+    console.log("🔍 [DEBUG] collegeSlug:", collegeSlug)
 
     if (!collegeSlug) {
-      return NextResponse.redirect(new URL("/login", req.url))
+      console.log("❌ [DEBUG] No collegeSlug provided")
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+      return NextResponse.redirect(new URL("/login", baseUrl))
     }
 
     // Connect to database first
@@ -20,28 +24,37 @@ export async function GET(req: NextRequest) {
 
     // Find college using the slug from URL
     const college = await College.findOne({ slug: collegeSlug })
+    console.log("🔍 [DEBUG] Found college:", college?.name || "Not found")
     
     if (!college) {
-      return NextResponse.redirect(new URL("/login", req.url))
+      console.log("❌ [DEBUG] College not found for slug:", collegeSlug)
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+      return NextResponse.redirect(new URL("/login", baseUrl))
     }
 
     // Get the current session
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.email) {
-      return NextResponse.redirect(new URL("/login", req.url))
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+      return NextResponse.redirect(new URL("/login", baseUrl))
     }
 
     const userEmail = session.user.email
+    console.log("🔍 [DEBUG] User email:", userEmail)
 
     // Extract email domain from user's email
     const userEmailDomain = userEmail.split('@')[1]
+    console.log("🔍 [DEBUG] User email domain:", userEmailDomain)
+    console.log("🔍 [DEBUG] College email domain:", college.emailDomain)
 
     // Validate email domain against college's email domain
     if (userEmailDomain !== college.emailDomain) {
+      console.log("❌ [DEBUG] Email domain mismatch")
       // Email domain doesn't match - redirect back to college login with error
       const errorMessage = `Only @${college.emailDomain} emails are allowed for ${college.name}. Please use your college email address.`
-      const redirectUrl = `/login/${collegeSlug}?error=${encodeURIComponent(errorMessage)}`
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+      const redirectUrl = `${baseUrl}/login/${collegeSlug}?error=${encodeURIComponent(errorMessage)}`
       
       // First, delete the user if they exist (to prevent any access)
       const existingUser = await candidates.findOne({ email: userEmail })
@@ -50,7 +63,7 @@ export async function GET(req: NextRequest) {
       }
       
       // Clear the session by setting a response with cleared cookies
-      const response = NextResponse.redirect(new URL(redirectUrl, req.url))
+      const response = NextResponse.redirect(new URL(redirectUrl))
       
       // Clear the NextAuth session cookies
       response.cookies.delete('next-auth.session-token')
@@ -88,10 +101,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Force a session refresh by redirecting to a special endpoint that will refresh and redirect
-    const refreshUrl = `/api/auth/refresh-session?redirect=/candidate/profile&collegeId=${college._id}&collegeSlug=${college.slug}`
-    return NextResponse.redirect(new URL(refreshUrl, req.url))
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+    const refreshUrl = `${baseUrl}/api/auth/refresh-session?redirect=/candidate/profile&collegeId=${college._id}&collegeSlug=${college.slug}`
+    return NextResponse.redirect(new URL(refreshUrl))
 
   } catch (error: any) {
-    return NextResponse.redirect(new URL("/login", req.url))
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.BASE_URL || 'http://localhost:3000'
+    return NextResponse.redirect(new URL("/login", baseUrl))
   }
 }

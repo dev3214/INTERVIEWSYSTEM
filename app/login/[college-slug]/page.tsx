@@ -80,9 +80,10 @@ export default function CollegeLoginPage({ params }: { params: Promise<{ "colleg
       }))
       
       // Start Google OAuth with custom callback
+      const baseUrl = window.location.origin
       const res = await signIn("google", { 
         redirect: false,
-        callbackUrl: `/api/auth/validate-college-email?collegeSlug=${college.slug}`,
+        callbackUrl: `${baseUrl}/api/auth/validate-college-email?collegeSlug=${college.slug}`,
         state: college.slug // Pass college slug in state as backup
       })
       

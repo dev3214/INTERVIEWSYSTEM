@@ -18,6 +18,21 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     signOut: "/login",
   },
+  // Add production-specific configuration
+  ...(process.env.NODE_ENV === 'production' && {
+    useSecureCookies: true,
+    cookies: {
+      sessionToken: {
+        name: `__Secure-next-auth.session-token`,
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: true,
+        },
+      },
+    },
+  }),
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
       // Only validate college emails for candidates
