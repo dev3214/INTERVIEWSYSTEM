@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import toast from "react-hot-toast"
@@ -41,19 +41,25 @@ export default function CollegeLoginPage({ params }: { params: Promise<{ "colleg
 
   useEffect(() => {
     const fetchCollege = async () => {
+      console.log("🔍 [COLLEGE-LOGIN] Fetching college data for slug:", resolvedParams["college-slug"])
       try {
         const response = await fetch(`/api/admin/colleges?slug=${resolvedParams["college-slug"]}`)
+        console.log("🔍 [COLLEGE-LOGIN] College API response status:", response.status)
         const data = await response.json()
+        console.log("🔍 [COLLEGE-LOGIN] College API response data:", data)
         
         if (data.success && data.colleges.length > 0) {
+          console.log("✅ [COLLEGE-LOGIN] College found:", data.colleges[0].name)
           setCollege(data.colleges[0])
         } else {
+          console.log("❌ [COLLEGE-LOGIN] College not found in API response")
           // Only set "College not found" error if there's no URL error
           if (!urlError) {
             setError("College not found")
           }
         }
       } catch (err) {
+        console.log("❌ [COLLEGE-LOGIN] Error fetching college:", err)
         // Only set fetch error if there's no URL error
         if (!urlError) {
           setError("Failed to load college information")
@@ -67,33 +73,54 @@ export default function CollegeLoginPage({ params }: { params: Promise<{ "colleg
   }, [resolvedParams["college-slug"], urlError])
 
   const handleGoogleSignIn = async () => {
-    if (!college) return
+    if (!college) {
+      console.log("❌ [COLLEGE-LOGIN] No college data available for sign in")
+      return
+    }
+    
+    console.log("🔍 [COLLEGE-LOGIN] Starting Google sign in for college:", college.name)
+    console.log("🔍 [COLLEGE-LOGIN] College details:", {
+      slug: college.slug,
+      id: college._id,
+      emailDomain: college.emailDomain
+    })
     
     try {
       
       // Store college context in sessionStorage for validation
-      sessionStorage.setItem('collegeContext', JSON.stringify({
+      const collegeContext = {
         collegeSlug: college.slug,
         collegeId: college._id,
         emailDomain: college.emailDomain,
         collegeName: college.name
-      }))
+      }
+      sessionStorage.setItem('collegeContext', JSON.stringify(collegeContext))
+      console.log("✅ [COLLEGE-LOGIN] College context stored in sessionStorage:", collegeContext)
       
       // Start Google OAuth with custom callback
       const baseUrl = window.location.origin
+      const callbackUrl = `${baseUrl}/api/auth/validate-college-email?collegeSlug=${college.slug}`
+      console.log("🔍 [COLLEGE-LOGIN] Base URL:", baseUrl)
+      console.log("🔍 [COLLEGE-LOGIN] Callback URL:", callbackUrl)
+      
       const res = await signIn("google", { 
         redirect: false,
-        callbackUrl: `${baseUrl}/api/auth/validate-college-email?collegeSlug=${college.slug}`,
+        callbackUrl: callbackUrl,
         state: college.slug // Pass college slug in state as backup
       })
       
+      console.log("🔍 [COLLEGE-LOGIN] SignIn response:", res)
+      
       if (res?.error) {
+        console.log("❌ [COLLEGE-LOGIN] Google sign in error:", res.error)
         toast.error("Google login failed")
       } else if (res?.url) {
+        console.log("✅ [COLLEGE-LOGIN] Redirecting to OAuth URL:", res.url)
         // Redirect to the OAuth URL
         window.location.href = res.url
       }
     } catch (error) {
+      console.log("❌ [COLLEGE-LOGIN] Exception during sign in:", error)
       toast.error("Login failed. Please try again.")
     }
   }
@@ -196,6 +223,23 @@ export default function CollegeLoginPage({ params }: { params: Promise<{ "colleg
                 <strong>Note:</strong> Only @{college.emailDomain} emails are allowed to register
               </p>
             </div>
+
+            {/* Logout Notice for Different College Users */}
+            {urlError && urlError.includes("already logged in") && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 text-center mb-2">
+                  <strong>Notice:</strong> {urlError}
+                </p>
+                <Button 
+                  onClick={() => signOut({ callbackUrl: `/login/${college.slug}` })}
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                >
+                  Logout & Switch College
+                </Button>
+              </div>
+            )}
 
             <p className="text-xs text-center text-gray-500">
               By signing in, you agree to our Terms of Service and Privacy Policy

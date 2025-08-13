@@ -58,12 +58,24 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, account, profile, trigger, session }) {
+  console.log("🔍 [NEXTAUTH-JWT] ===== JWT CALLBACK STARTED =====")
+  console.log("🔍 [NEXTAUTH-JWT] Trigger:", trigger)
+  console.log("🔍 [NEXTAUTH-JWT] Account provider:", account?.provider)
+  console.log("🔍 [NEXTAUTH-JWT] Profile email:", profile?.email)
+  
   await connect();
 
   if (account?.provider === "google" && profile?.email) {
     
     // Always fetch the latest user data from database to ensure we have college context
     let user = await candidates.findOne({ email: profile.email });
+    console.log("🔍 [NEXTAUTH-JWT] Database user lookup:", {
+      email: profile.email,
+      found: !!user,
+      userId: user?._id,
+      collegeId: user?.collegeId,
+      collegeSlug: user?.collegeSlug
+    })
 
     if (!user) {
       // Get admin emails from env and split into array
@@ -126,11 +138,13 @@ export const authOptions: NextAuthOptions = {
 
     // Set token properties
     if (user) {
+      console.log("✅ [NEXTAUTH-JWT] Setting token properties from existing user")
       token._id = user._id.toString();
       token.email = user.email;
       token.username = user.username;
       token.role = user.role;
     } else {
+      console.log("🔍 [NEXTAUTH-JWT] No existing user - setting basic token properties")
       // For new candidates without a profile yet
       token.email = profile.email;
       token.username = profile.name?.replace(/\s+/g, "").toLowerCase();
@@ -141,6 +155,11 @@ export const authOptions: NextAuthOptions = {
     
     // Add college context to token if available
     if (user.collegeId) {
+      console.log("✅ [NEXTAUTH-JWT] Adding college context to token:", {
+        collegeId: user.collegeId.toString(),
+        collegeSlug: user.collegeSlug,
+        emailDomain: user.emailDomain
+      })
       token.collegeId = user.collegeId.toString();
       token.collegeSlug = user.collegeSlug;
       token.emailDomain = user.emailDomain;
@@ -166,6 +185,14 @@ export const authOptions: NextAuthOptions = {
     }
   }
 
+  console.log("🔍 [NEXTAUTH-JWT] Final token:", {
+    _id: token._id,
+    email: token.email,
+    role: token.role,
+    collegeId: token.collegeId,
+    collegeSlug: token.collegeSlug
+  })
+  console.log("✅ [NEXTAUTH-JWT] ===== JWT CALLBACK COMPLETED =====")
   return token;
 },
 
